@@ -1,0 +1,62 @@
+# Name of the workflow (shown in GitHub UI)
+name: ML Model CI/CD Pipeline
+
+# TRIGGER: Run this workflow on every push to the main branch
+on:
+  push:
+    branches:
+      - main
+
+# JOBS: Define the work to do
+jobs:
+
+  # JOB 1: Build and Test
+  build-and-test:
+    # Use a free Ubuntu virtual machine provided by GitHub
+    runs-on: ubuntu-latest
+
+    # STEPS: Each step runs one after another
+    steps:
+
+      # Step 1: Download your code from the repository
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Install Python 3.10 on the virtual machine
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Step 3: Install all required Python libraries
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+
+      # Step 4: Run the automated tests
+      - name: Run Tests
+        run: python test_model.py
+
+  # JOB 2: Build Docker Image (only runs after Job 1 passes)
+  build-docker:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Step 1: Download the code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Build the Docker image
+      - name: Build Docker Image
+        run: docker build -t iris-ml-model .
+
+      # Step 3: Test that the Docker container runs successfully
+      - name: Test Docker Container
+        run: docker run iris-ml-model
+
+    #   # Step 4: (Optional) Deploy — echo simulates deployment here
+    #   - name: Deploy to Testing Environment
+    #     run: echo 'Deploying iris-ml-model to testing environment...'
